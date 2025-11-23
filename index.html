@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Tính Tỉ Lệ Dinh Dưỡng</title>
+    <style>
+        /* --- CẤU HÌNH GIAO DIỆN (CSS) --- */
+        :root {
+            /* Bảng màu Pastel */
+            --bg-color: #FDFCF0;        /* Màu nền kem nhạt */
+            --card-bg: #FFFFFF;         /* Màu nền thẻ trắng */
+            --primary: #B8E0D2;         /* Màu xanh mint chủ đạo */
+            --primary-dark: #95C0B0;    /* Màu xanh đậm hơn cho viền */
+            --accent: #EAC4D5;          /* Màu hồng phấn nhấn nhá */
+            --text-main: #5D5C61;       /* Màu chữ xám đậm */
+            --text-light: #999999;      /* Màu chữ xám nhạt */
+            --shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Khung chứa chính (Container) */
+        .container {
+            width: 100%;
+            max-width: 480px; /* Giới hạn chiều rộng giống giao diện mobile */
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: fit-content;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--text-main);
+            text-align: center;
+            font-weight: 600;
+        }
+
+        /* Phần Input */
+        .input-group {
+            width: 100%;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            outline: none;
+            text-align: center;
+            color: var(--text-main);
+            background: #FAFFFC;
+            transition: all 0.3s ease;
+        }
+
+        input[type="number"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 8px rgba(234, 196, 213, 0.4);
+        }
+
+        /* Phần Bảng Kết Quả */
+        .table-container {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 12px;
+            border: 1px solid #eee;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: var(--primary);
+            color: #fff;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 1rem;
+        }
+
+        /* Căn phải cho cột số liệu */
+        th:last-child, td:last-child {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Hiệu ứng dòng lẻ */
+        tbody tr:nth-child(even) {
+            background-color: #fbfbfb;
+        }
+
+        /* Tổng cộng footer */
+        tfoot tr {
+            background-color: var(--accent);
+            color: #fff;
+            font-weight: bold;
+        }
+
+        /* Empty state message */
+        .empty-state {
+            text-align: center;
+            color: var(--text-light);
+            font-style: italic;
+            margin-top: 10px;
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>⚖️ Tính Thành Phần ⚖️</h1>
+        
+        <div class="input-group">
+            <label for="inputWeight">Nhập tổng khối lượng (kg)</label>
+            <input type="number" id="inputWeight" placeholder="Ví dụ: 10" inputmode="decimal" step="0.01">
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Thành phần</th>
+                        <th>Khối lượng (kg)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    </tbody>
+                <tfoot id="tableFoot">
+                    <tr>
+                        <td>Tổng cộng</td>
+                        <td id="totalWeight">0 kg</td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div id="emptyMsg" class="empty-state">Vui lòng nhập số kg để xem kết quả</div>
+        </div>
+    </div>
+
+    <script>
+        const CONFIG_SAMPLE = 40;
+        var config_sample_value = [
+            { name: "Nách)", ratio: 1.14},
+            { name: "Vai", ratio: 3.4 },
+            { name: "Nạc dăm", ratio: 1.8 },
+            { name: "Sườn già", ratio: 0.7 },
+            { name: "Xương cổ", ratio: 1.3 },
+            { name: "Nạc lật", ratio: 2.3 },
+            { name: "Đùi gọ", ratio: 3.54 },
+            { name: "Đùi đầu rồng", ratio: 3.38 },
+            { name: "Giò trước", ratio: 1.9 },
+            { name: "Thăn chuột", ratio: 0.4 },
+            { name: "Nọng", ratio: 0.75 },
+            { name: "Xương đuôi", ratio: 1.0 },
+            { name: "Xương ống", ratio: 0.9 },
+            { name: "Xương giá", ratio: 0.26 },
+            { name: "Mỡ gáy", ratio: 1.5 },
+            { name: "Cốt lết", ratio: 5.58 },
+            { name: "Giò sau", ratio: 1.66 },
+            { name: "Đệm", ratio: 0.3 },
+            { name: "Ba rọi sườn", ratio: 6.36 },
+            { name: "Sụn mặt trăng", ratio: 0.1 },
+            { name: "Vụn", ratio: 1.1 },
+            { name: "Mỡ xa", ratio: 0.5 },
+            { name: "Hao hụt", ratio: 0.13 },
+
+        ]
+        var check = 0;
+        config_sample_value.forEach(o => check += o.ratio);
+        console.log(check)
+        
+
+        var CONFIG_RATIOS = config_sample_value.map((o) => {
+            return {
+                "name": o.name,
+                "ratio": o.ratio / CONFIG_SAMPLE
+            }
+        })
+
+        // DOM Elements
+        const inputEl = document.getElementById('inputWeight');
+        const tableBody = document.getElementById('tableBody');
+        const totalWeightEl = document.getElementById('totalWeight');
+        const emptyMsg = document.getElementById('emptyMsg');
+        const tableFoot = document.getElementById('tableFoot');
+
+        // Hàm format số (làm tròn 3 chữ số thập phân cho gọn)
+        const formatNumber = (num) => {
+            return parseFloat(num.toFixed(3)); // Xóa số 0 thừa ở đuôi
+        };
+
+        // Hàm render bảng
+        const renderTable = (inputValue) => {
+            // Xóa dữ liệu cũ
+            tableBody.innerHTML = '';
+
+            if (!inputValue || inputValue <= 0) {
+                // Nếu không có input hợp lệ
+                emptyMsg.style.display = 'block';
+                tableBody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#ccc;">--</td></tr>`;
+                totalWeightEl.textContent = "0 kg";
+                return;
+            }
+
+            emptyMsg.style.display = 'none';
+            let calculatedTotal = 0;
+
+            // Duyệt qua config và tạo hàng
+            CONFIG_RATIOS.forEach(item => {
+                const weight = inputValue * item.ratio;
+                calculatedTotal += weight;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${formatNumber(weight)} kg</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Cập nhật tổng
+            totalWeightEl.textContent = `${formatNumber(calculatedTotal)} kg`;
+        };
+
+        // Lắng nghe sự kiện khi người dùng nhập liệu
+        inputEl.addEventListener('input', (e) => {
+            // Thay dấu phẩy thành dấu chấm trước khi chuyển sang số
+            const rawValue = e.target.value.replace(',', '.');
+            const val = parseFloat(rawValue);
+            renderTable(val);
+        });
+        
+
+        // Khởi tạo bảng lần đầu (trạng thái rỗng)
+        renderTable(0);
+
+    </script>
+</body>
+</html>
